@@ -2,14 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>3d Galery</title>
+  <title>3D Gallery</title>
     <style>
         body { margin: 0; }
-        button {
-            position: fixed;
+        #start{
             top: 90vh;
             left: 50vw;
             transform: translate(-50%, -50%);
+        }
+        button {
+            position: fixed;
             background: transparent;
             border: 1px solid burlywood;
             color: aliceblue;
@@ -23,9 +25,9 @@
         }
     </style>
 </head>
-    <script type="module" src="/main.js"></script>
-    <button id="start" type="button">Press to start</button>
+    <script type="module" src="/src/index.js"></script>
+    <!--<script src="main.js"></script>-->
     <div id="app">
-
+        <button id="start" type="button">Press to start</button>
     </div>
 </html>

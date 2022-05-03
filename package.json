@@ -8,9 +8,12 @@
     "preview": "vite preview"
   },
   "devDependencies": {
-    "vite": "^2.9.5"
+    "vite": "^2.9.5",
+    "webpack": "^5.38.1",
+    "webpack-cli": "^4.7.2"
   },
   "dependencies": {
+    "lodash": "^4.17.21",
     "three": "^0.140.0"
   }
 }
