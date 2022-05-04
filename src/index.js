@@ -1,5 +1,14 @@
 import * as THREE from 'three' //'https://unpkg.com/three@0.140.0/build/three.module.js'
 
+import Stats from 'stats.js'
+
+const stats = new Stats()
+stats.showPanel(0) // 0: fps, 1: ms, 2: mb, 3+: custom
+document.body.appendChild(stats.dom)
+
+
+
+
 
 import {PointerLockControls} from "three/examples/jsm/controls/PointerLockControls";
 
@@ -20,6 +29,7 @@ const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.inner
 
 const renderer = new THREE.WebGLRenderer({antialias: true});
 renderer.setSize( window.innerWidth, window.innerHeight );
+renderer.setPixelRatio(window.devicePixelRatio)
 document.body.appendChild( renderer.domElement );
 
 renderer.xr.enabled = true;
@@ -34,9 +44,9 @@ const cube = new THREE.Mesh( geometry, material );
 cube.position.set(0,1,0)
 scene.add( cube );*/
 
-const OBJFile = 'models/Earth_2K.obj';
+/*const OBJFile = 'models/Earth_2K.obj';
 const MTLFile = 'models/Earth_2K.mtl';
-const JPGFile = 'models/texture.jpg';
+const JPGFile = 'models/noir-blanc.jpg';
 
 let planette;
 
@@ -59,7 +69,17 @@ new MTLLoader()
                 planette = object
                 scene.add(object);
             });
-    });
+    });*/
+
+const terre = new THREE.Mesh(
+    new THREE.SphereGeometry(1,50,50),
+    new THREE.MeshBasicMaterial({
+        map: new THREE.TextureLoader().load('./img/earth4k.jpg')
+        }
+    )
+)
+terre.position.set(0,1.5,0)
+scene.add(terre)
 
 
 const tloader = new THREE.TextureLoader()
@@ -109,11 +129,13 @@ document.addEventListener('keyup',keyup);
 function unlockedCursor() {
     isNotInGame = true
     startButton.style.display = 'block'
+    document.getElementById('VRButton').style.display = 'block'
 }
 
 function lockedCursor() {
     isNotInGame = false
     startButton.style.display = 'none'
+    document.getElementById('VRButton').style.display = 'none'
 }
 window.addEventListener( 'resize', onWindowResize, false );
 
@@ -157,6 +179,7 @@ function checkBounderies(camera) {
 }
 
 function animate() {
+    stats.begin()
     requestAnimationFrame( animate );
 
     if(keys['z']){
@@ -172,9 +195,10 @@ function animate() {
         controls.moveRight(.1);
     }
     checkBounderies(camera)
-    planette.rotation.y += 0.01
+    terre.rotation.y += 0.01
 
     renderer.render( scene, camera );
+    stats.end()
 }
 
 
