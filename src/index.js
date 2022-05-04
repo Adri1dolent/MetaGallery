@@ -97,6 +97,7 @@ scene.add(plane)
 
 texture = tloader.load('img/wall-texture.jpeg')
 texture.wrapS = texture.wrapT = THREE.RepeatWrapping
+texture.repeat.set(room_width/10,1)
 texture.anisotropy=16
 
 const l1 = [1,0,-1,0]
@@ -201,6 +202,9 @@ function animate() {
     stats.end()
 }
 
+function displayArtAt(x,z,img){
+
+}
 
 
 
