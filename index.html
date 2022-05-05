@@ -9,25 +9,41 @@
             top: 90vh;
             left: 50vw;
             transform: translate(-50%, -50%);
+            opacity: 0.3;
         }
-        button {
+        #infoTab{
+            top: 20vh;
+            left: 80vw;
+            transform: translate(-50%, -50%);
+            position: fixed;
+            background: transparent;
+            opacity: 0.8;
+        }
+        #actionButton{
+            top: 85vh;
+            left: 50vw;
+            transform: translate(-50%, -50%);
+            opacity: 1;
+        }
+        button{
             position: fixed;
             background: transparent;
             border: 1px solid burlywood;
-            color: aliceblue;
+            color: #0e7300;
             font-size: 24px;
-            opacity: 0.3;
             transition: 0.3s;
             border-radius: 5px;
         }
-        button:hover{
+        #start:hover{
             opacity: 1;
         }
     </style>
 </head>
     <script type="module" src="/src/index.js"></script>
     <!--<script src="main.js"></script>-->
+    <div id="infoTab" style="display: none"></div>
     <div id="app">
         <button id="start" type="button">Press to start</button>
+        <button id="actionButton" type="button">Press 'E' for informations</button>
     </div>
 </html>
