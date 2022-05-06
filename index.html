@@ -11,14 +11,6 @@
             transform: translate(-50%, -50%);
             opacity: 0.3;
         }
-        #infoTab{
-            top: 20vh;
-            left: 80vw;
-            transform: translate(-50%, -50%);
-            position: fixed;
-            background: transparent;
-            opacity: 0.8;
-        }
         #actionButton{
             top: 85vh;
             left: 50vw;
@@ -37,11 +29,27 @@
         #start:hover{
             opacity: 1;
         }
+        #loader{
+            position: fixed;
+            background: transparent;
+            top: calc(50% - 40px);
+            left: calc(50% - 40px);
+            border: 16px solid #f3f3f3; /* Light grey */
+            border-top: 16px solid #3498db; /* Blue */
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            animation: spin 2s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
     <script type="module" src="/src/index.js"></script>
     <!--<script src="main.js"></script>-->
-    <div id="infoTab" style="display: none"></div>
+    <div id="loader"></div>
     <div id="app">
         <button id="start" type="button">Press to start</button>
         <button id="actionButton" type="button">Press 'E' for informations</button>
