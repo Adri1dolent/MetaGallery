@@ -1,31 +1,16 @@
 import * as THREE from 'three' //'https://unpkg.com/three@0.140.0/build/three.module.js'
-
 import Stats from 'stats.js'
+import {PointerLockControls} from "three/examples/jsm/controls/PointerLockControls";
+import {VRButton} from "three/examples/jsm/webxr/VRButton";
+import {getImgList} from "./scraper";
+import {getProjectText} from "./scraper";
 
 const stats = new Stats()
 stats.showPanel(0) // 0: fps, 1: ms, 2: mb, 3+: custom
 document.body.appendChild(stats.dom)
 
-let tabData = [`<a href="https://cristal.univ-lille.fr/pirvi/projects/attic/a_main_levee">À main levée</a>`,`2`,`3`]
-
-
-
-//.then(response => {response.text().then(text => {
-//     const regex = new RegExp(/https:\/\/cristal\.univ-lille\.fr\/pirvi\/images\/projects\/.*\.png/g)
-//     return text.match(regex)
-
-const tsb = await fetch('https://cristal.univ-lille.fr/pirvi/pages/projects')
-
-const text = await tsb.text()
-
-const regex = new RegExp(/https:\/\/cristal\.univ-lille\.fr\/pirvi\/images\/projects\/.*\.png/g)
-
-const imgList = text.match(regex)
-
-
-import {PointerLockControls} from "three/examples/jsm/controls/PointerLockControls";
-
-import {VRButton} from "three/examples/jsm/webxr/VRButton";
+const tabData = await getProjectText()
+const imgList = getImgList()
 
 let room_width
 let room_length
@@ -34,7 +19,6 @@ let room_height
 const artSpacement = 5
 const artSize = 2
 
-//const imgList = ['https://cristal.univ-lille.fr/pirvi/images/projects/vairdraw/thumbnail.png','https://cristal.univ-lille.fr/pirvi/images/projects/vairdraw/thumbnail.png','https://cristal.univ-lille.fr/pirvi/images/projects/vairdraw/thumbnail.png']
 const nbArts = imgList.length
 
 let allowAction = false
@@ -73,39 +57,6 @@ document.body.appendChild(VRButton.createButton(renderer))
 
 const ambientLight = new THREE.AmbientLight(0xf0f0f0,1)
 scene.add(ambientLight)
-
-/*const geometry = new THREE.BoxGeometry();
-const material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
-const cube = new THREE.Mesh( geometry, material );
-cube.position.set(0,1,0)
-scene.add( cube );*/
-
-/*const OBJFile = 'models/Earth_2K.obj';
-const MTLFile = 'models/Earth_2K.mtl';
-const JPGFile = 'models/noir-blanc.jpg';
-
-let planette;
-
-new MTLLoader()
-    .load(MTLFile, function (materials) {
-        materials.preload();
-        new OBJLoader()
-            .setMaterials(materials)
-            .load(OBJFile, function (object) {
-
-                object.position.y = 5;
-
-                let texture = new THREE.TextureLoader().load(JPGFile);
-
-                object.traverse(function (child) {   // aka setTexture
-                    if (child instanceof THREE.Mesh) {
-                        child.material.map = texture;
-                    }
-                });
-                planette = object
-                scene.add(object);
-            });
-    });*/
 
 const terre = new THREE.Mesh(
     new THREE.SphereGeometry(1,50,50),
@@ -298,7 +249,6 @@ function displayArtAt(x,z,imgUrl){
 
 for (let i = 0; i < nbArts; i++) {
     const artPos = getArtPositions(nbArts)
-    console.log(imgList[i])
     displayArtAt(artPos[i].x,artPos[i].z,imgList[i])
 }
 
