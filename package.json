@@ -9,6 +9,7 @@
   },
   "devDependencies": {
     "vite": "^2.9.5",
+    "vite-plugin-mkcert": "^1.6.0",
     "webpack": "^5.38.1",
     "webpack-cli": "^4.7.2"
   },
