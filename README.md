@@ -14,5 +14,5 @@ npm run dev
 Expose to network:
 
 ```bash
-vite --hosts
+vite --host
 ```
