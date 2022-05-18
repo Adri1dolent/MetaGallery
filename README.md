@@ -10,3 +10,9 @@ npm install
 ```bash
 npm run dev
 ```
+
+Expose to network:
+
+```bash
+vite --host
+```
