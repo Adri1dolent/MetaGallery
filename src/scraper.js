@@ -1,7 +1,8 @@
-const projectsPage = await fetch('https://cristal.univ-lille.fr/pirvi/pages/projects')
+const projectsPage = await fetch('https://pirvi.univ-lille.fr/pages/projects/',{mode: "no-cors"})
 const projectsPageAsText = await projectsPage.text()
 
-const equipementsPage = await fetch('https://cristal.univ-lille.fr/pirvi/pages/equipment/')
+
+const equipementsPage = await fetch('https://pirvi.univ-lille.fr/pages/equipment/',{mode: "no-cors"})
 const equipementsPageAsText = await equipementsPage.text()
 
 export function getProjectsImgs() {
