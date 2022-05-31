@@ -2,43 +2,54 @@ import * as THREE from 'three' //'https://unpkg.com/three@0.140.0/build/three.mo
 import Stats from 'stats.js'
 import {PointerLockControls} from "three/examples/jsm/controls/PointerLockControls";
 import {VRButton} from "three/examples/jsm/webxr/VRButton";
-import {getEquipementsImgs, getEquipmentsText, getProjectsImgs} from "./scraper";
-import {getProjectText} from "./scraper";
+//import {getEquipementsImgs, getEquipmentsText, getProjectsImgs} from "./scraper";
+//import {getProjectText} from "./scraper";
 import ThreeMeshUI from 'three-mesh-ui'
 import {XRControllerModelFactory} from "three/examples/jsm/webxr/XRControllerModelFactory";
-import {HTMLMesh} from "three/examples/jsm/interactive/HTMLMesh";
 import {GLTFLoader} from "three/examples/jsm/loaders/GLTFLoader";
 import FontJSON from '../fonts/BreadleySansRegular-MVyEB-msdf/BreadleySansRegular-MVyEB-msdf.json';
 import FontImage from '../fonts/BreadleySansRegular-MVyEB-msdf/BreadleySansRegular-MVyEB.png';
 
 
+///////////////
+//ROOMS CONFIGS
+///////////////
+const rooms_width = 10
+const rooms_height = 3
+const couloirWidth = 1.5
+const couloirlenght = 3
+
+const artSpacement = 5
+const artSize = 2
+
+let nbTextsLoaded = 0
+
+let isNotInGame = true;
 let lastPosition
-const intersected = []
+
 
 let clock = new THREE.Clock()
 let delta = 0
 
 let cameraVector = new THREE.Vector3();
 const prevGamePads = new Map();
-let speedFactor = [5, 5, 5, 5];
 
 const stats = new Stats()
 stats.showPanel(0) // 0: fps, 1: ms, 2: mb, 3+: custom
 document.body.appendChild(stats.dom)
 
-const artSpacement = 5
-const artSize = 2
+
+let speedFactor = [5, 5, 5, 5];
+let textsInRoom = []
 let spots = []
-
-const rooms_width = 10
-let room_length
-const rooms_height = 3
-const couloirWidth = 1.5
-const couloirlenght = 3
-
-/*const projectsPage = await fetch('https://pirvi.univ-lille.fr/pages/projects/')
-const projectsPageAsText = await projectsPage.text()
-console.log(projectsPageAsText)*/
+let keys = [];
+let boundingBoxes = []
+const intersected = []
+//NON FONCTIONNEL DU A UNE REDIRECTION EN RAISON DU CHANGEMENT D'URL (AU NIVEAU DES IMAGES)
+//const ProjectsImgList = getProjectsImgs()
+/////////////////////
+//First room's images
+/////////////////////
 
 //NON FONCTIONNEL DU A UNE REDIRECTION EN RAISON DU CHANGEMENT D'URL (AU NIVEAU DES IMAGES)
 //const ProjectsImgList = getProjectsImgs()
@@ -47,49 +58,60 @@ const ProjectsImgList = ['../ProjectsMiniaturesImgs/thumbnail1.png', '../Project
     '../ProjectsMiniaturesImgs/thumbnail5.png', '../ProjectsMiniaturesImgs/thumbnail6.png',
     '../ProjectsMiniaturesImgs/thumbnail7.png', '../ProjectsMiniaturesImgs/thumbnail8.png']
 
-const EquipmentsImgList = ['../EquipmentsMiniaturesImgs/thumbnail1.png', '../EquipmentsMiniaturesImgs/thumbnail2.png',
-    '../EquipmentsMiniaturesImgs/thumbnail3.png', '../EquipmentsMiniaturesImgs/thumbnail4.png', '../EquipmentsMiniaturesImgs/thumbnail5.png']
+//////////////////////
+//Second room's images
+//////////////////////
+
 //NON FONCTIONNEL DU A UNE REDIRECTION EN RAISON DU CHANGEMENT D'URL (AU NIVEAU DES IMAGES)
 //const EquipmentsImgList = getEquipementsImgs()
-const nbArts = ProjectsImgList.length + EquipmentsImgList.length
-const roomsNbArts = [ProjectsImgList.length, EquipmentsImgList.length]
-const roomsLengths = [getRoomLength(ProjectsImgList.length), getRoomLength(EquipmentsImgList.length)]
-room_length = getRoomLength(nbArts)
+const EquipmentsImgList = ['../EquipmentsMiniaturesImgs/thumbnail1.png', '../EquipmentsMiniaturesImgs/thumbnail2.png',
+    '../EquipmentsMiniaturesImgs/thumbnail3.png', '../EquipmentsMiniaturesImgs/thumbnail4.png', '../EquipmentsMiniaturesImgs/thumbnail5.png']
 
-
-let isNotInGame = true;
-
-
-//NON FOCNTIONNEL DU AU CORS?
-//const t = await getProjectText()
-//const ta = await getEquipmentsText()
+/////////////////////////////
+//Art pieces details (images)
+/////////////////////////////
 const tabData = ['../PagesImgs/page1.png', '../PagesImgs/page2.png', '../PagesImgs/page3.png', '../PagesImgs/page4.png', '../PagesImgs/page5.png', '../PagesImgs/page6.png'
     , '../PagesImgs/page7.png', '../PagesImgs/page8.png', '../PagesImgs/page9.png', '../PagesImgs/page10.png', '../PagesImgs/page11.png', '../PagesImgs/page12.png', '../PagesImgs/page13.png']
 
-
+//Total number of art pieces
+const nbArts = ProjectsImgList.length + EquipmentsImgList.length
+//Array of number of art pieces contained in each room
+const roomsNbArts = [ProjectsImgList.length, EquipmentsImgList.length]
+//Rooms lengths
+const roomsLengths = [getRoomLength(ProjectsImgList.length), getRoomLength(EquipmentsImgList.length)]
+//Total sim's size
+const total_length = getRoomLength(nbArts)
+//Array of positions defined for each art piece
 const artPositions = getArtPositions()
-let keys = [];
 
-let boundingBoxes = []
+const tloader = new THREE.TextureLoader()
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 camera.position.z = 0
 camera.position.y = 1.5
 
+//Object on wich the camera is attached, used to move the camera especially in vr
 const dolly = new THREE.Object3D()
 dolly.position.z = 5
 dolly.add(camera)
 scene.add(dolly)
+lastPosition = dolly.position.clone()
+//Fake camera used for vector buffering
 const stupCam = new THREE.Object3D()
 camera.add(stupCam)
-
 
 const renderer = new THREE.WebGLRenderer({antialias: true});
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio)
 document.body.appendChild(renderer.domElement);
 
+//keyboard controls
+const controls = new PointerLockControls(camera, renderer.domElement);
+const startButton = document.getElementById("start")
+startButton.addEventListener('click', function () {
+    controls.lock()
+})
 
 //sphere arround the player to check for wall collisions
 const geometry = new THREE.SphereGeometry(0.25, 10, 10);
@@ -99,19 +121,24 @@ material.transparent = true
 const sphere = new THREE.Mesh(geometry, material);
 dolly.add(sphere)
 
+//Bounding box wich will actually detect the collision
 const dollyBB = new THREE.Box3()
 sphere.geometry.computeBoundingBox()
 dollyBB.copy(sphere.geometry.boundingBox).applyMatrix4(sphere.matrixWorld);
 
+//add enter vr button
+const vrbut = VRButton.createButton(renderer)
+document.body.appendChild(vrbut)
 
+//setup vr/controllers
 renderer.xr.enabled = true;
 let controller1 = renderer.xr.getController(0)
 let controller2 = renderer.xr.getController(1)
 dolly.add(controller1)
 dolly.add(controller2)
 
+//Display the controller inside the sim
 const controllerModelFactory = new XRControllerModelFactory();
-
 let controllerGrip1 = renderer.xr.getControllerGrip(0);
 controllerGrip1.add(controllerModelFactory.createControllerModel(controllerGrip1));
 dolly.add(controllerGrip1);
@@ -120,8 +147,8 @@ let controllerGrip2 = renderer.xr.getControllerGrip(1);
 controllerGrip2.add(controllerModelFactory.createControllerModel(controllerGrip2));
 dolly.add(controllerGrip2);
 
+//Draw a line from the controller to see where it's poiting
 const linegeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -1)]);
-
 const linemat = new THREE.LineBasicMaterial({
     color: 0xffffff
 });
@@ -131,13 +158,127 @@ controllerLine.scale.z = 5;
 
 controller1.add(controllerLine.clone());
 controller2.add(controllerLine.clone());
+controller1.addEventListener('selectstart', onSelectStart);
+controller1.addEventListener('selectend', onSelectEnd);
+controller2.addEventListener('selectstart', onSelectStart);
+controller2.addEventListener('selectend', onSelectEnd);
 
+document.addEventListener('keydown', keydown);
+document.addEventListener('keyup', keyup);
+document.addEventListener('mousedown',onEPressed)
+document.addEventListener('mouseup',onEReleased)
 
+window.addEventListener('resize', onWindowResize, false);
+
+controls.addEventListener('unlock', unlockedCursor, false);
+controls.addEventListener('lock', lockedCursor, false)
+
+//This group will be constituted of the arts and will be used to detect collision with the ray casted from the controllers/camera
 let group = new THREE.Group()
 scene.add(group)
 const tempMatrix = new THREE.Matrix4();
 let raycaster = new THREE.Raycaster()
 
+//Add all objects to the scene
+createRoom(roomsLengths[0], rooms_width, rooms_height, 0, 0, false, true)
+createCouloir(0, roomsLengths[0])
+createRoom(roomsLengths[1], rooms_width, rooms_height, 0, roomsLengths[0] + couloirlenght, true, false)
+loadDescriptionPages()
+displayAllArts()
+putSpots()
+
+
+//load sky texture
+const texciel = tloader.load('img/sky.jpg')
+texciel.wrapS = texciel.wrapT = THREE.RepeatWrapping
+texciel.repeat.set(rooms_width / 10, total_length / 10)
+texciel.anisotropy = 16
+const ciel_material = new THREE.MeshLambertMaterial({map: texciel, side: THREE.DoubleSide})
+const ciel = new THREE.Mesh(new THREE.PlaneBufferGeometry(1500, 1500), ciel_material)
+ciel.rotateX(-Math.PI / 2)
+ciel.position.set(0, 30, (total_length / 2))
+scene.add(ciel)
+
+//set lighting
+const ambientLight = new THREE.AmbientLight(0xf0f0f0, 0.8)
+scene.add(ambientLight)
+
+//create instructions panel
+const instructions = new ThreeMeshUI.Block( {
+    width: 2,
+    height: 1.5,
+    fontSize: 0.055,
+    justifyContent: 'center',
+    textAlign: 'center',
+    fontFamily: FontJSON,
+    fontTexture: FontImage,
+    borderRadius: 0.2,
+    borderWidth: 0.02,
+    borderColor: new THREE.Color(0.8,0,0.6),
+    bestFit: 'auto'
+} );
+
+instructions.add(
+    new ThreeMeshUI.Text( {
+        content: 'Bienvenue dans la galerie metaversielle du PIRVI\n-Pour vous déplacer, utilisez les touches Z,Q,S,D ou les joysticks de vos controllers\n'+
+                 '-Pour afficher le détail d\'un projet, cliquez dessus avec votre souris ou avec votre boutton "trigger"\n' +
+                 '-Vous pouvez également déplacer le détail à l\'aide d\'un "drag and drop"'
+    } )
+);
+instructions.rotateX(-0.5)
+instructions.position.set(0,1,1.5)
+scene.add(instructions)
+
+//add human 3d model
+const gltfLoader = new GLTFLoader()
+
+const map = tloader.load('../BrandonFull/Brandon.png')
+map.flipY = false
+let brandon = new THREE.Object3D()
+
+await gltfLoader.load(
+    '../BrandonFull/Brandon.glb',
+    function ( gltf ) {
+        let mesh = gltf.scene.children[0];
+        mesh.material = new THREE.MeshPhongMaterial({
+            map: map
+        });
+        mesh.scale.set(0.001,0.001,0.001)
+        mesh.position.set(0,1.2,8)
+        mesh.rotateZ(-0.15)
+        mesh.rotateX(0.15)
+        brandon = mesh
+        scene.add( mesh );
+    },
+    function ( xhr ) {
+        console.log( ('3d human model is '+ xhr.loaded / xhr.total * 100 ) + '% loaded' );
+    },
+    function ( error ) {
+        console.log( 'An error happened ' + error);
+    }
+);
+
+
+function animate() {
+    stats.begin()
+    ThreeMeshUI.update()
+
+    cleanIntersected();
+    if(renderer.xr.isPresenting){
+        intersectObjects( controller1 );
+        intersectObjects( controller2 );
+    }else {
+        intersectCamObjects(camera)
+    }
+
+    checkBounderies()
+    delta = clock.getDelta()
+    handleMovement(delta)
+    dollyMove(delta)
+    brandon.rotation.z += 0.01
+    renderer.render(scene, camera);
+    stats.end()
+}
 
 function onSelectStart(event) {
     const controller = event.target;
@@ -151,7 +292,7 @@ function onSelectStart(event) {
         const object = intersection.object;
         if (object.name.startsWith("art")) {
             let num = parseInt(object.name.substring(4))
-            textsInRoom[num].visible = (textsInRoom[num].visible === true)?false:true
+            textsInRoom[num].visible = (textsInRoom[num].visible !== true)
         } else {
             object.material.emissive.b = 1;
             controller.attach(object);
@@ -175,112 +316,6 @@ function onSelectEnd(event) {
 
 }
 
-const pointerGeometry = new THREE.BufferGeometry().setFromPoints([
-    new THREE.Vector3(0, 0, 0),
-    new THREE.Vector3(0, 0, -1),
-]);
-const line = new THREE.Line(pointerGeometry);
-line.scale.z = 5;
-controller1.add(line.clone())
-controller2.add(line.clone())
-
-controller1.addEventListener('selectstart', onSelectStart);
-controller1.addEventListener('selectend', onSelectEnd);
-
-controller2.addEventListener('selectstart', onSelectStart);
-controller2.addEventListener('selectend', onSelectEnd);
-
-
-const vrbut = VRButton.createButton(renderer)
-document.body.appendChild(vrbut)
-
-const tloader = new THREE.TextureLoader()
-
-
-const texciel = tloader.load('img/sky.jpg')
-texciel.wrapS = texciel.wrapT = THREE.RepeatWrapping
-texciel.repeat.set(rooms_width / 10, room_length / 10)
-texciel.anisotropy = 16
-const ciel_material = new THREE.MeshLambertMaterial({map: texciel, side: THREE.DoubleSide})
-const ciel = new THREE.Mesh(new THREE.PlaneBufferGeometry(1500, 1500), ciel_material)
-ciel.rotateX(-Math.PI / 2)
-ciel.position.set(0, 30, (room_length / 2))
-scene.add(ciel)
-
-
-const ambientLight = new THREE.AmbientLight(0xf0f0f0, 0.8)
-scene.add(ambientLight)
-
-const instructions = new ThreeMeshUI.Block( {
-    width: 2,
-    height: 1.5,
-    fontSize: 0.055,
-    justifyContent: 'center',
-    textAlign: 'center',
-    fontFamily: FontJSON,
-    fontTexture: FontImage,
-    borderRadius: 0.2,
-    borderWidth: 0.02,
-    borderColor: new THREE.Color(0.8,0,0.6),
-    bestFit: 'auto'
-} );
-
-instructions.add(
-    new ThreeMeshUI.Text( {
-        content: 'Bienvenue dans la galerie metaversielle du PIRVI\n-Pour vous déplacer, utilisez les touches Z,Q,S,D ou les joysticks de vos controllers\n'+
-                 '-Pour afficher le détail d\'un projet, clickez dessus avec votre souris ou avec votre boutton "trigger"\n' +
-                 '-Vous pouvez également déplacer le détail à l\'aide d\'un "drag and drop"'
-    } )
-);
-//instructions.rotateY(Math.PI)
-instructions.rotateX(-0.5)
-instructions.position.set(0,1,1.5)
-scene.add(instructions)
-
-const gltfLoader = new GLTFLoader()
-
-const map = tloader.load('../BrandonFull/Brandon.png')
-map.flipY = false
-let brandon = new THREE.Object3D()
-
-await gltfLoader.load(
-    '../BrandonFull/Brandon.glb',
-    function ( gltf ) {
-        let mesh = gltf.scene.children[0];
-        mesh.material = new THREE.MeshPhongMaterial({
-            map: map
-        });
-        mesh.scale.set(0.001,0.001,0.001)
-        mesh.position.set(0,1.2,8)
-        mesh.rotateZ(-0.15)
-        mesh.rotateX(0.15)
-        brandon = mesh
-        scene.add( mesh );
-    },
-    function ( xhr ) {
-        console.log( ( xhr.loaded / xhr.total * 100 ) + '% loaded' );
-    },
-    function ( error ) {
-        console.log( 'An error happened' );
-    }
-);
-
-
-createRoom(roomsLengths[0], rooms_width, rooms_height, 0, 0, false, true)
-createCouloir(0, roomsLengths[0])
-createRoom(roomsLengths[1], rooms_width, rooms_height, 0, roomsLengths[0] + couloirlenght, true, false)
-
-const controls = new PointerLockControls(camera, renderer.domElement);
-const startButton = document.getElementById("start")
-startButton.addEventListener('click', function () {
-    controls.lock()
-})
-
-document.addEventListener('keydown', keydown);
-document.addEventListener('keyup', keyup);
-document.addEventListener('mousedown',onEPressed)
-document.addEventListener('mouseup',onEReleased)
-
 
 function unlockedCursor() {
     isNotInGame = true
@@ -295,22 +330,12 @@ function lockedCursor() {
 
 }
 
-window.addEventListener('resize', onWindowResize, false);
-
 function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 
 }
-
-controls.addEventListener('unlock', unlockedCursor, false);
-controls.addEventListener('lock', lockedCursor, false)
-
-
-let textsInRoom = []
-let loaded = 0
-loadDescriptionPages()
 
 /*function showInfo() {
     if (!isInfoDisplayed[closestArtIndex] && allowAction) {
@@ -378,29 +403,6 @@ function handleMovement(delta) {
     }
 }
 
-lastPosition = dolly.position.clone()
-
-function animate() {
-    stats.begin()
-    ThreeMeshUI.update()
-
-    cleanIntersected();
-    if(renderer.xr.isPresenting){
-        intersectObjects( controller1 );
-        intersectObjects( controller2 );
-    }else {
-        intersectCamObjects(camera)
-    }
-
-    checkBounderies()
-    delta = clock.getDelta()
-    handleMovement(delta)
-    dollyMove(delta)
-    brandon.rotation.z += 0.01
-    renderer.render(scene, camera);
-    stats.end()
-}
-
 /**
  * Affiche une oeuvre d'art
  * @param x position sur x
@@ -423,7 +425,6 @@ function displayArtAt(x, z, imgUrl, artNumber,hasTitle) {
             bestFit: 'auto'
         } );
         const txt = imgUrl.split("/")[2].replace(".png","")
-        console.log(txt)
         panel.add(
             new ThreeMeshUI.Text( {
                 content: txt,
@@ -446,8 +447,6 @@ function displayArtAt(x, z, imgUrl, artNumber,hasTitle) {
         group.add(art)
     })
 }
-
-displayAllArts()
 
 /**
  * Affiche toutes les oeuvres dont les liens sont disponible dans les listes "ProjectsImgList" et "EquipmentsImgList"
@@ -494,19 +493,12 @@ function putInvisiblePageAt(x, z, url, pageNumber) {
         textsInRoom[pageNumber] = art
         group.add(art)
         //scene.add(art)
-        loaded++
-        if (loaded === nbArts) {
+        nbTextsLoaded++
+        if (nbTextsLoaded === nbArts) {
             document.getElementById("loader").style.display = 'none'
         }
     })
 }
-
-putSpots()
-
-//Boucle du rafraichissement de la scène
-renderer.setAnimationLoop(function () {
-    animate();
-});
 
 /**
  * Calcule la distance entre 2 points
@@ -516,11 +508,11 @@ renderer.setAnimationLoop(function () {
  * @param y2 y deuxième point
  * @returns {number} résultat en mètres
  */
-function getDistance(x1, y1, x2, y2) {
+/*function getDistance(x1, y1, x2, y2) {
     let y = x2 - x1;
     let x = y2 - y1;
     return Math.sqrt(x * x + y * y);
-}
+}*/
 
 /**
  * Défini les positions de toutes les oeuvres en prennant l'espacement et la pièce dans laquelle elles se trouvent en compte
@@ -607,9 +599,9 @@ function dollyMove(delta) {
                         //si le mouvement du joystick dépasse la marge d'erreur
                         if (Math.abs(value) > 0.2) {
                             //valeur de l'axe horizontal des joysticks
-                            if (i == 2) {
+                            if (i === 2) {
                                 //si joystick du controlleur gauche
-                                if (data.handedness == "left") {
+                                if (data.handedness === "left") {
                                     //déplacement du dolly en fonction de la valeur renvoyée par le joystick/vecteur vitesse choisi/l'orientation de la cam
                                     dolly.position.x -= cameraVector.z * speedFactor[i] * data.axes[2]/2 * delta;
                                     dolly.position.z += cameraVector.x * speedFactor[i] * data.axes[2]/2 * delta;
@@ -621,9 +613,9 @@ function dollyMove(delta) {
                                 }
                             }
                             //valeur de l'axe vertical des joysticks
-                            if (i == 3) {
+                            if (i === 3) {
                                 //si joystick du controlleur gauche
-                                if (data.handedness == "left") {
+                                if (data.handedness === "left") {
                                     dolly.position.x -= cameraVector.x * speedFactor[i] * data.axes[3]/2 * delta;
                                     dolly.position.z -= cameraVector.z * speedFactor[i] * data.axes[3]/2 * delta;
                                 }
@@ -863,8 +855,7 @@ function onEPressed() {
         const object = intersection.object;
         if (object.name.startsWith("art")) {
             let num = parseInt(object.name.substring(4))
-            console.log(num)
-            textsInRoom[num].visible = (textsInRoom[num].visible === true)?false:true
+            textsInRoom[num].visible = (textsInRoom[num].visible !== true)
         } else {
             object.material.emissive.b = 1;
             controller.attach(object);
@@ -921,4 +912,8 @@ function intersectCamObjects(cam){
     }
 }
 
+//Boucle du rafraichissement de la scène
+renderer.setAnimationLoop(function () {
+    animate();
+});
 
